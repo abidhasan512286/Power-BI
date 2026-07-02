@@ -1,1 +1,211 @@
+// Customer Measures:
 #Customers = DISTINCTCOUNT(DimCustomer[CustomerKey])
+
+//Age Group Calculation:
+Avg Customers Age = AVERAGE(DimCustomer[Customers Age])
+Age Catagory = SWITCH(
+                    TRUE(),
+                        AND([Customers Age]>=0,  [Customers Age]<=10), "0-10", 
+                        AND([Customers Age]>=10, [Customers Age]<=20), "11-20",
+                        AND([Customers Age]>=20, [Customers Age]<=30), "21-30",
+                        AND([Customers Age]>=30, [Customers Age]<=40), "31-40",
+                        AND([Customers Age]>=40, [Customers Age]<=50), "41-50",
+                        AND([Customers Age]>=50, [Customers Age]<=60), "51-60",
+                        AND([Customers Age]>=60, [Customers Age]<=700), "61-70",
+                        "Over 70"
+                        )
+Total Orders = COUNTROWS(RELATEDTABLE(FactTable))
+Total Qty = CALCULATE(SUM(FactTable[OrderQuantity]))
+Customer Type = IF([Total Orders]>=2 && [Total Qty]>=100, "VIP Customer", IF([Total Orders]>=2, "Loyal Customer", "Perodic Buyer"))
+
+//Transection Measures:
+#Transection = COUNTROWS(FactTable)
+
+
+//Revenue Measures:
+Total Revenue (1) = SUMX(FactTable, FactTable[OrderQuantity] * RELATED(DimProduct[Price]))
+Avg. Revenue (Age Group) = AVERAGEX(ALL(DimCustomer[Age Catagory]),
+                                    [Total Revenue (1)]
+                                    )
+
+
+// Customers With Children Revenue:
+CWC Revenue (1) = ---This calculate total revenue from customers with children
+        VAR _CustomerWithChildren = FILTER(
+                                            DimCustomer,
+                                            DimCustomer[TotalChildren]>0
+                                            ) 
+        RETURN
+            CALCULATE([Total Revenue (1)], _CustomerWithChildren)
+
+
+//Percentage of Reveneu in Customers with children:
+% CWC Revenue = DIVIDE([CWC Revenue (1)], 
+                        [Total Revenue (1)]
+                        )
+
+
+// Customers Without Children Revenue:
+C Without C Revenue (1) = ---This calculate total revenue from customers without children
+        VAR _CustomerWithoutChildren = FILTER(
+                                            DimCustomer,
+                                            DimCustomer[TotalChildren]=0
+                                            ) 
+        RETURN
+            CALCULATE([Total Revenue (1)], _CustomerWithoutChildren)
+
+
+//Percentage of Reveneu in Customers without children:
+% C without C Revenue = DIVIDE([C Without C Revenue (1)],
+                                [Total Revenue (1)]
+                                )
+
+
+//Percentage of Male Revenue:
+M Revenue = CALCULATE([Total Revenue (1)], DimCustomer[Gender]="M")
+% M Revenue = FORMAT(DIVIDE([M Revenue], 
+                            [Total Revenue (1)]), 
+                    "0.0%"
+                    )
+CF Male = IF([% M Revenue]>[% F Revenue], "Green", "Red")
+
+
+//Percentage of Female Revenue:
+F Revenue = CALCULATE([Total Revenue (1)], DimCustomer[Gender]="F")
+% F Revenue = FORMAT(DIVIDE([F Revenue], 
+                            [Total Revenue (1)]),
+                    "0.0%"
+                    )
+CF Female = IF([% F Revenue]>[% M Revenue], "Green", "Red")
+
+
+//Dynamic Captions:
+Caption = ---This is the Revenue of Age-group above and below average caption
+            VAR _AvgRevenueAgeGroup =  AVERAGEX(
+                                                SUMMARIZE(DimCustomer, DimCustomer[Age Catagory]), 
+                                                [Avg. Revenue (Age Group)]
+                                                )
+
+            VAR _RevenueFilteredTable = SUMX(
+                                            FILTER(
+                                                    SUMMARIZE(DimCustomer, DimCustomer[Age Catagory]), 
+                                                    [Total Revenue (1)]>_AvgRevenueAgeGroup),
+                                            [Total Revenue (1)]
+                                            )   
+            VAR _TopAgeGroup =  TOPN(1, 
+                                    DISTINCT(DimCustomer[Age Catagory]), 
+                                    [Total Revenue (1)], DESC,
+                                    DimCustomer[Age Catagory], ASC
+                                    )
+            VAR _RevenueTopAgeGroup = CALCULATE([Total Revenue (1)], _TopAgeGroup)
+
+            VAR _Result = DIVIDE(_RevenueFilteredTable, [Total Revenue (1)])
+
+                RETURN
+                FORMAT(_Result, "0.0%")&" Of Revenue attributed to the Teal bars, Primarily  
+                led by the "&_TopAgeGroup&" Age-Group surpassing the Average Revenue LINE"
+
+
+//Caption Customers with children:
+Caption CWC = 
+    --Total Countries--
+    VAR _NoOfCountries = DISTINCTCOUNT(DimGeography[Country])
+
+    --This Extract the Top Country with more Customera without children--
+    VAR _TopCountry = TOPN(1,
+                            DISTINCT(DimGeography[Country]),
+                            [CWC Revenue (1)], DESC,
+                            DimGeography[Country], ASC
+                            )
+    --Total customers in the Top country--
+    VAR _TotalCustomersTopCounntry = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), _TopCountry)
+
+    --This calculate Total Revenue in the Top Country--
+    VAR _TotalRevenueTopCountry = CALCULATE([CWC Revenue (1)], _TopCountry)
+    
+    --Calculate % of CWC in the Top Country--
+    VAR _pctTopCountryRevenue = DIVIDE(_TotalRevenueTopCountry, 
+                                        CALCULATE([CWC Revenue (1)], ALL(DimGeography[Country]))
+                                        )
+    --Extract Male Customers with children in the Top Country--
+    VAR _MaleCWCTopCountry = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), 
+                                            _TopCountry,
+                                                 FILTER(DimCustomer, DimCustomer[Gender]="M")
+                                        )
+
+    --Calculate % of Male Customers i the Top Country--
+    VAR _pctMaleCWCTopCountry = DIVIDE(_MaleCWCTopCountry, _TotalCustomersTopCounntry)
+
+    --Extract Female Customers with children--
+    VAR _FemaleCWCTopCountr = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), 
+                                            _TopCountry,
+                                                 FILTER(DimCustomer, DimCustomer[Gender]="F")
+                                        )
+
+    --Calculate % of Male Customers i the Top Country--
+    VAR _pctFemaleCWCTopCountry = DIVIDE(_FemaleCWCTopCountr, _TotalCustomersTopCounntry)
+
+    RETURN
+    FORMAT(_TopCountry, "0.0%")&" leads with "&
+    FORMAT(_pctTopCountryRevenue, "0.0%")&" of customers with children among "&_NoOfCountries&" countris, generating "&
+    FORMAT(_TotalRevenueTopCountry, "$0,00")&" customers, comprising "&
+    FORMAT(_pctMaleCWCTopCountry, "0.0%")&" Males and "&FORMAT(_pctFemaleCWCTopCountry, "0.0%")&" Females"
+
+
+//Caption Customers without children:
+Caption C without C = 
+    --Total Countries--
+    VAR _NoOfCountries = DISTINCTCOUNT(DimGeography[Country])
+
+    --This Extract the Top Country with more Customera without children--
+    VAR _TopCountry = TOPN(1,
+                            DISTINCT(DimGeography[Country]),
+                            [C Without C Revenue (1)], DESC,
+                            DimGeography[Country], ASC
+                            )
+    --Total customers in the Top country--
+    VAR _TotalCustomersTopCounntry = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), _TopCountry)
+
+    --This calculate Total Revenue in the Top Country--
+    VAR _TotalRevenueTopCountry = CALCULATE([C Without C Revenue (1)], _TopCountry)
+    
+    --Calculate % of C_Without_C in the Top Country--
+    VAR _pctTopCountryRevenue = DIVIDE(_TotalRevenueTopCountry, 
+                                        CALCULATE([C Without C Revenue (1)], ALL(DimGeography[Country]))
+                                        )
+    --Extract Male Customers without children--
+    VAR _MaleCWithoutCTopCountry = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), 
+                                            _TopCountry,
+                                                 FILTER(DimCustomer, DimCustomer[Gender]="M")
+                                        )
+
+    --Calculate % of Male Customers i the Top Country--
+    VAR _pctMaleCWithoutCTopCountry = DIVIDE(_MaleCWithoutCTopCountry, _TotalCustomersTopCounntry)
+
+    --Extract Female Customers without children--
+    VAR _FemaleCWCTopCountr = CALCULATE(DISTINCTCOUNT(FactTable[CustomerKey]), 
+                                            _TopCountry,
+                                                 FILTER(DimCustomer, DimCustomer[Gender]="F")
+                                        )
+
+    --Calculate % of Male Customers in the Top Country--
+    VAR _pctFemaleCWCTopCountry = DIVIDE(_FemaleCWCTopCountr, _TotalCustomersTopCounntry)
+
+    RETURN
+    FORMAT(_TopCountry, "0.0%")&" leads with "&
+    FORMAT(_pctTopCountryRevenue, "0.0%")&" of customers with children among "&_NoOfCountries&" countris, generating "&
+    FORMAT(_TotalRevenueTopCountry, "$0,00")&" customers, comprising "&
+    FORMAT(_pctMaleCWithoutCTopCountry, "0.0%")&" Males and "&
+    FORMAT(_pctFemaleCWCTopCountry, "0.0%")&" Females"
+
+
+//Dynamic Customers Ranking:
+Dynamic Customers = 
+        VAR _TopCustomers = RANKX(ALLSELECTED(DimCustomer[FirstName]),
+                                  [Total Revenue (1)]
+                                  ,,
+                                  DESC
+                                 )
+        RETURN
+            IF(_TopCustomers<='Dynamic Customers'[Dynamic Customers Value], [Total Revenue (1)])
+            

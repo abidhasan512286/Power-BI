@@ -1,1 +1,224 @@
+// Date Table:
+Date = ADDCOLUMNS(CALENDARAUTO(),
+                                "Year", YEAR([Date]),
+                                "Month", FORMAT([Date], "mmm"),
+                                "MonthNum", MONTH([Date]),
+                                "WeekDay", FORMAT([Date], "ddd"),
+                                "WeekDayNum", WEEKDAY([Date]),
+                                "WeekDayType", IF(WEEKDAY([Date])=1 || WEEKDAY([Date])=7, "Weekend", "WeekDay")
+                    )
+
+
+//Total Patients:
+Total Patients = COUNTROWS('Patient Dataset')
+
+
+// Administrative and Non-Administrative Parcentage:
+% Administrative = 
+        VAR _WithAdmin = CALCULATE([Total Patients], 
+                                    FILTER('Patient Dataset', 'Patient Dataset'[patient_admin_flag] = TRUE())
+                                   )
+        RETURN
+            DIVIDE(_WithAdmin,
+                    [Total Patients]
+                    )
+
+% Non-Administrative = 
+        VAR _WithoutAdmin = CALCULATE([Total Patients], 
+                                    FILTER('Patient Dataset', 'Patient Dataset'[patient_admin_flag] = FALSE())
+                                   )
+        RETURN
+            DIVIDE(_WithoutAdmin,
+                    [Total Patients]
+                    )
+
+//Patients Satisfaction:
+Avg. Satisfaction Score = CALCULATE(AVERAGE('Patient Dataset'[patient_sat_score]), 
+                                        'Patient Dataset'[patient_sat_score] <> BLANK()
+                                    )
+
+
+% Service Not Rated = 
+        VAR _ServiceNotRated = CALCULATE([Total Patients], 
+                                        'Patient Dataset'[patient_sat_score] = BLANK()
+                                        )
+        RETURN
+            DIVIDE(_ServiceNotRated,
+                    [Total Patients]
+                    )
+
+Avg. Wait Time = AVERAGEA('Patient Dataset'[patient_waittime])
+
+//Patients Referral:
+% Referred Patients = 
+        VAR _ReferredPatients = CALCULATE([Total Patients],
+                                            'Patient Dataset'[department_referral] <> "None"
+                                            )
+        RETURN
+            DIVIDE(_ReferredPatients,
+                    [Total Patients]
+                    )
+
+% Walk-In Patients = 
+        VAR _WalkInPatients = CALCULATE([Total Patients],
+                                            'Patient Dataset'[department_referral] = "None"
+                                            )
+        RETURN
+            DIVIDE(_WalkInPatients,
+                    [Total Patients]
+                    )
+
+//Patient Gander Analysis:
+% Male = 
+        VAR _MaleValue = CALCULATE([Total Patients],
+                                    'Patient Dataset'[patient_gender] = "Male"
+                                    )
+        RETURN
+            DIVIDE(_MaleValue,
+                    [Total Patients]
+                    )
+
+% Female = 
+        VAR _FemaleValue = CALCULATE([Total Patients],
+                                    'Patient Dataset'[patient_gender] = "Female"
+                                    )
+        RETURN
+            DIVIDE(_FemaleValue,
+                    [Total Patients]
+                    )
+
+% Unknown = 
+        VAR _UnknownValue = CALCULATE([Total Patients],
+                                    'Patient Dataset'[patient_gender] = "Unknown"
+                                    )
+        RETURN
+            DIVIDE(_UnknownValue,
+                    [Total Patients]
+                    )
+
+//Dynamic Captions:
+#HitTop Caption = 
+        VAR _SelectedMeasure = SELECTEDVALUE(Parameter[Parameter Order])
+        VAR _x = IF(_SelectedMeasure = 0, 
+                                    "Patients are most SATISFIED when the SCALE 
+                                     shows the darkest GREEN on the Age-Group"
+                    )
+        VAR _y = IF(_SelectedMeasure = 1, 
+                                        "Patients most WAITED when the SCALE
+                                        shows the darkest BROWN on the Age-Group"
+                    )
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    _SelectedMeasure=_x, _x,
+                    _SelectedMeasure=_y, _y
+                    )
+
+HitTop Caption = 
+        VAR _SelectedMeasure = SELECTEDVALUE(Parameter[Parameter Order])
+
+        RETURN
+            IF(_SelectedMeasure = 0, 
+                                    "Patients are most SATISFIED when the SCALE shows the darkest GREEN on the Age-Group",
+                                     "Patients most WAITED when the SCALE shows the darkest BROWN on the Age-Group"
+                )
+
+
+//Conditional Formatting:
+
+CF % Administrative = IF([% Administrative]>[% Non-Administrative], 1, 0)
+
+CF % Non-Administrative = IF([% Non-Administrative]>[% Administrative], 1, 0)
+
+CF Avg. Satisfaction Max Point (Month) = 
+        VAR _PaitientTable = CALCULATETABLE(
+                                    ADDCOLUMNS(SUMMARIZE('Date', 'Date'[Month]),
+                                                            "@Total-Patients", [Avg. Satisfaction Score]
+                                                ),
+                                        ALLSELECTED()
+                                    )
+        VAR _MaxValue = MAXX(_PaitientTable, [@Total-Patients])
+        VAR _MinValue = MINX(_PaitientTable, [@Total-Patients])
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    [Total Patients]=_MaxValue, 1, 
+                    [Total Patients]=_MinValue, 0
+                )
+        
+
+CF Value Max Point (Month-Value) = 
+        VAR _PaitientTable = CALCULATETABLE(
+                                    ADDCOLUMNS(SUMMARIZE('Date', 'Date'[Month]),
+                                                            "@Total-Patients", [Total Patients]
+                                                ),
+                                        ALLSELECTED()
+                                    )
+        VAR _MaxValue = MAXX(_PaitientTable, [@Total-Patients])
+        VAR _MinValue = MINX(_PaitientTable, [@Total-Patients])
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    [Total Patients]=_MaxValue, [Total Patients], 
+                    [Total Patients]=_MinValue, [Total Patients]
+                )
+        
+
+CF Colour Max Point (Month) = 
+        VAR _PaitientTable = CALCULATETABLE(
+                                    ADDCOLUMNS(SUMMARIZE('Date', 'Date'[Month]),
+                                                            "@Total-Patients", [Total Patients]
+                                                ),
+                                        ALLSELECTED()
+                                    )
+        VAR _MaxValue = MAXX(_PaitientTable, [@Total-Patients])
+        VAR _MinValue = MINX(_PaitientTable, [@Total-Patients])
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    [Total Patients]=_MaxValue, 1, 
+                    [Total Patients]=_MinValue, 0
+                )
+        
+
+CF Value Max Point (Year) = 
+        VAR _PaitientTable = CALCULATETABLE(
+                                    ADDCOLUMNS(SUMMARIZE('Date', 'Date'[Year]),
+                                                            "@Total-Patients", [Total Patients]
+                                                ),
+                                        ALLSELECTED()
+                                    )
+        VAR _MaxValue = MAXX(_PaitientTable, [@Total-Patients])
+        VAR _MinValue = MINX(_PaitientTable, [@Total-Patients])
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    [Total Patients]=_MaxValue, [Total Patients], 
+                    [Total Patients]=_MinValue, [Total Patients]
+                )
+        
+
+CF Colour Max Point (Year) = 
+        VAR _PaitientTable = CALCULATETABLE(
+                                    ADDCOLUMNS(SUMMARIZE('Date', 'Date'[Year]),
+                                                            "@Total-Patients", [Total Patients]
+                                                ),
+                                        ALLSELECTED()
+                                    )
+        VAR _MaxValue = MAXX(_PaitientTable, [@Total-Patients])
+        VAR _MinValue = MINX(_PaitientTable, [@Total-Patients])
+
+        RETURN
+            SWITCH(
+                TRUE(),
+                    [Total Patients]=_MaxValue, 1, 
+                    [Total Patients]=_MinValue, 0
+                )
+        
+
 

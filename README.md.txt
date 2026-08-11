@@ -1,5 +1,6 @@
 📊 Power BI Analytics & Business Intelligence Portfolio
-Welcome to my main Power BI portfolio repository! This repository contains a collection of end-to-end Business Intelligence (BI) dashboards and analytical projects demonstrating expertise in Data Modeling, DAX (Data Analysis Expressions), Advanced Data Transformation (Power Query), UI/UX Dashboard Design, and Executive Reporting.
+Welcome to my main Power BI portfolio repository! This repository contains a collection of end-to-end Business Intelligence (BI) dashboards and analytical projects
+demonstrating expertise in Data Modeling, DAX (Data Analysis Expressions), Advanced Data Transformation (Power Query), UI/UX Dashboard Design, and Executive Reporting.
 
 🧰 Technical Skills Demonstrated Across Projects
 Data Transformation & ETL: Power Query (M Language) for cleaning, combining, and structuring raw data sources.

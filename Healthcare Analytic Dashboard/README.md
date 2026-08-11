@@ -7,10 +7,10 @@ admission channels, wait times, departmental referral distributions, and demogra
 
 📊 Key Features & Visual Analytics
 1. Operational & Clinical KPIs
-Patient Visit Volume: Tracks total emergency room visits, categorized by Administrative vs. Non-Administrative appointments.
-Service Efficiency & Wait Times: Measures average patient wait times and tracks unrated service ratios to identify operational bottlenecks.
-Patient Experience: Evaluates overall service quality using an average patient satisfaction score.
-Admission Channels: Compares the proportion of Walk-In Patients versus Referred Patients.
+    Patient Visit Volume: Tracks total emergency room visits, categorized by Administrative vs. Non-Administrative appointments.
+    Service Efficiency & Wait Times: Measures average patient wait times and tracks unrated service ratios to identify operational bottlenecks.
+    Patient Experience: Evaluates overall service quality using an average patient satisfaction score.
+    Admission Channels: Compares the proportion of Walk-In Patients versus Referred Patients.
 
 3. Temporal & Trend Analytics
 Time-of-Day Slicing: Interactive filtering toggles (AM vs. PM) to evaluate peak visit hours and shift-wise workloads.

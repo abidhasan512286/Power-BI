@@ -6,22 +6,26 @@ This dashboard provides hospital administrators and medical staff with actionabl
 
 📊 Key Features & Visual Analytics
 1. Operational & Clinical KPIs
+
 Patient Visit Volume: Tracks total emergency room visits, categorized by Administrative vs. Non-Administrative appointments.
 Service Efficiency & Wait Times: Measures average patient wait times and tracks unrated service ratios to identify operational bottlenecks.
 Patient Experience: Evaluates overall service quality using an average patient satisfaction score.
 Admission Channels: Compares the proportion of Walk-In Patients versus Referred Patients.
 
-2. Temporal & Trend Analytics
+3. Temporal & Trend Analytics
+
 Time-of-Day Slicing: Interactive filtering toggles (AM vs. PM) to evaluate peak visit hours and shift-wise workloads.
 Weekly Operational Split: Visual comparison of visit volumes between Weekdays and Weekends to optimize staffing schedules.
 Longitudinal Trends: Multi-year and monthly trendlines showing seasonal variations in emergency room traffic.
 
-4. Patient Demographics & Diversity
+5. Patient Demographics & Diversity
+
 Age Group Distribution: Categorizes patient volume across age brackets (Infancy, Early Childhood, Middle Childhood, Teenager, Adult).
 Gender Breakdown: Displays proportion of visits by gender identity (Male, Female, Unknown).
 Demographic Satisfaction Matrix: An interactive heatmap cross-analyzing patient race against age brackets to highlight satisfaction distribution across diverse patient groups.
 
 4. Departmental Referrals & Specialty Breakdown
+
 Specialty Referral Distribution: Ranks emergency referrals to specialized units including General Practice, Orthopedics, Physiotherapy, Cardiology, Neurology, Gastroenterology, and Renal services.
 
 🚀 Interactive Slicers & Filtering
